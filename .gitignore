@@ -1,0 +1,36 @@
+# Python
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.ipynb_checkpoints/
+
+# Environment
+.env
+
+# Datasets and models (too large for GitHub)
+ai/data/raw/*
+ai/data/processed/*
+ai/models/*.pth
+ai/models/*.pt
+!**/.gitkeep
+
+# GIS reference data
+gis/reference_data/*
+!gis/reference_data/.gitkeep
+
+# Backend runtime files
+backend/uploads/*
+backend/outputs/*
+!backend/uploads/.gitkeep
+!backend/outputs/.gitkeep
+
+# Node
+node_modules/
+frontend/dist/
+frontend/build/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/settings.json
