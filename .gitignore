@@ -8,12 +8,14 @@ __pycache__/
 # Environment
 .env
 
+
 # Datasets and models (too large for GitHub)
 ai/data/raw/*
-ai/data/processed/*
+ai/data/processed/**/*
+!ai/data/raw/.gitkeep
+!ai/data/processed/**/.gitkeep
 ai/models/*.pth
 ai/models/*.pt
-!**/.gitkeep
 
 # GIS reference data
 gis/reference_data/*
