@@ -10,16 +10,10 @@ __pycache__/
 
 
 
+
 # Datasets and models (too large for GitHub)
-ai/data/raw/*
-!ai/data/raw/.gitkeep
-ai/data/processed/*
-!ai/data/processed/**/
-!ai/data/processed/**/.gitkeep
-ai/data/processed/**/*.npy
-ai/data/processed/**/*.tif
-ai/data/processed/**/*.tiff
-ai/data/processed/**/*.png
+ai/data/raw/
+ai/data/processed/
 ai/models/*.pth
 ai/models/*.pt
 ai/models/*.onnx

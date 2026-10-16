@@ -40,3 +40,17 @@ IN_CHANNELS = 2
 # --- Labels ---
 # Processed masks: 0 = not flood, 1 = flood, 255 = ignore (no data / invalid)
 IGNORE_INDEX = 255
+
+# --- Data loading ---
+TRAIN_CROP = 256         # random crop size used during training
+TRAIN_BATCH_SIZE = 8
+EVAL_BATCH_SIZE = 4      # evaluation uses full 512x512 chips
+NUM_WORKERS = 2          # set to 0 if you get worker/shared-memory errors
+
+
+# --- Model and loss ---
+UNET_BASE_CHANNELS = 32   # filters in the first U-Net layer (doubles at each level)
+LOSS_BCE_WEIGHT = 0.5
+LOSS_DICE_WEIGHT = 0.5
+POS_WEIGHT = None         # e.g. 3.0 would up-weight flood pixels in the BCE term
+THRESHOLD = 0.5           # probability above which a pixel is called "flood"
