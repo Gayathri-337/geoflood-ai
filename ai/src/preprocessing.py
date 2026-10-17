@@ -10,24 +10,30 @@ import numpy as np
 from ai.src.config import CLIP_RANGES, IGNORE_INDEX
 
 
-def normalize_image(img):
+def normalize_image(img, clip_ranges=None):
     """
     Convert a raw SAR chip into a clean network input.
 
     Parameters
     ----------
-    img : array of shape [2, H, W], backscatter in dB (may contain NaN/inf)
+    img         : array of shape [C, H, W], backscatter in dB (may contain NaN/inf)
+    clip_ranges : optional list of (low, high) dB per band. Inference passes the
+                  ranges stored in the checkpoint; the default is config.CLIP_RANGES.
 
     Returns
     -------
-    normalized : float32 array [2, H, W], values in 0..1, never NaN
+    normalized : float32 array [C, H, W], values in 0..1, never NaN
     invalid    : bool array [H, W], True where any band was NaN/inf
     """
+    ranges = clip_ranges if clip_ranges is not None else CLIP_RANGES
+    if len(ranges) != img.shape[0]:
+        raise ValueError(f"Expected {len(ranges)} bands, got {img.shape[0]}")
+
     img = img.astype("float32")
     invalid = ~np.isfinite(img).all(axis=0)
 
     out = np.empty_like(img)
-    for b, (lo, hi) in enumerate(CLIP_RANGES):
+    for b, (lo, hi) in enumerate(ranges):
         band = np.nan_to_num(img[b], nan=lo, posinf=hi, neginf=lo)
         band = np.clip(band, lo, hi)
         out[b] = (band - lo) / (hi - lo)
