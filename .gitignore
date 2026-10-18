@@ -17,6 +17,8 @@ ai/data/processed/
 ai/models/*.pth
 ai/models/*.pt
 ai/models/*.onnx
+ai/results/predictions/
+ai/results/polygons/
 
 # GIS reference data
 gis/reference_data/*
