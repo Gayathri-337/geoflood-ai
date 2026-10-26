@@ -6,6 +6,7 @@ Interactive docs:              http://127.0.0.1:8000/docs
 """
 
 import logging
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -13,16 +14,28 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.exc import SQLAlchemyError
 
 from backend.config import get_settings
-from backend.routers import events, health, sources
+from backend.routers import events, health, predict, sources
+from backend.services.inference import ModelService
+from backend.services.uploads import UploadRejected
 
 settings = get_settings()
 log = logging.getLogger("geoflood")
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Runs once at server start: load the U-Net so requests don't pay for it."""
+    app.state.model_service.load()
+    yield
+
 
 app = FastAPI(
     title=settings.app_name,
     version=settings.app_version,
     description="API for GeoFlood AI: water and flood mapping from Sentinel-1 radar imagery.",
+    lifespan=lifespan,
 )
+app.state.model_service = ModelService(settings.model_checkpoint)
 
 app.add_middleware(
     CORSMiddleware,
@@ -40,9 +53,15 @@ async def database_error_handler(request: Request, exc: SQLAlchemyError):
                         content={"detail": "The database is unavailable or returned an error."})
 
 
+@app.exception_handler(UploadRejected)
+async def upload_rejected_handler(request: Request, exc: UploadRejected):
+    return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
+
+
 app.include_router(health.router, prefix="/api")
 app.include_router(sources.router, prefix="/api")
 app.include_router(events.router, prefix="/api")
+app.include_router(predict.router, prefix="/api")
 
 
 @app.get("/", include_in_schema=False)
