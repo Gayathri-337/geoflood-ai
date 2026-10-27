@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 class Settings(BaseSettings):
     app_name: str = "GeoFlood AI API"
-    app_version: str = "0.2.0"
+    app_version: str = "0.3.0"
     database_url: str
     # Browser origins allowed to call the API (the React dev servers)
     cors_origins: list[str] = [

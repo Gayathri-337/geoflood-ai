@@ -14,7 +14,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.exc import SQLAlchemyError
 
 from backend.config import get_settings
-from backend.routers import events, health, predict, sources
+from backend.routers import analyses, events, health, predict, sources, stats
 from backend.services.inference import ModelService
 from backend.services.uploads import UploadRejected
 
@@ -62,6 +62,8 @@ app.include_router(health.router, prefix="/api")
 app.include_router(sources.router, prefix="/api")
 app.include_router(events.router, prefix="/api")
 app.include_router(predict.router, prefix="/api")
+app.include_router(analyses.router, prefix="/api")
+app.include_router(stats.router, prefix="/api")
 
 
 @app.get("/", include_in_schema=False)
