@@ -39,3 +39,4 @@ frontend/build/
 .DS_Store
 Thumbs.db
 .vscode/settings.json
+outputs/
