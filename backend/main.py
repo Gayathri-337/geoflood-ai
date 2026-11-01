@@ -14,7 +14,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.exc import SQLAlchemyError
 
 from backend.config import get_settings
-from backend.routers import analyses, events, health, impact, predict, sources, stats
+from backend.routers import analyses, auth, events, health, impact, predict, sources, stats, users
 from backend.services.inference import ModelService
 from backend.services.uploads import UploadRejected
 
@@ -59,6 +59,8 @@ async def upload_rejected_handler(request: Request, exc: UploadRejected):
 
 
 app.include_router(health.router, prefix="/api")
+app.include_router(auth.router, prefix="/api")
+app.include_router(users.router, prefix="/api")
 app.include_router(sources.router, prefix="/api")
 app.include_router(events.router, prefix="/api")
 app.include_router(predict.router, prefix="/api")
