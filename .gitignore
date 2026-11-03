@@ -10,7 +10,6 @@ __pycache__/
 
 
 
-
 # Datasets and models (too large for GitHub)
 ai/data/raw/
 ai/data/processed/
@@ -19,6 +18,8 @@ ai/models/*.pt
 ai/models/*.onnx
 ai/results/predictions/
 ai/results/polygons/
+ai/results/osm_features/
+
 
 # GIS reference data
 gis/reference_data/*
