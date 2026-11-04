@@ -30,6 +30,7 @@ from ai.src import config
 from backend.config import Settings, get_settings
 from backend.database import get_db
 from backend.main import app
+from backend.security import access_policy
 from backend.services.inference import ModelService
 from gis.area_calculator import polygon_area_km2
 
@@ -121,6 +122,7 @@ def main():
     chip_bytes, jrc_bytes = CHIP.read_bytes(), JRC.read_bytes()
 
     app.dependency_overrides[get_db] = use_test_db
+    app.dependency_overrides[access_policy] = lambda: None
     with tempfile.TemporaryDirectory() as tmp_name, TestClient(app) as client:
         tmp = Path(tmp_name)
         settings = Settings(uploads_dir=tmp / "uploads", outputs_dir=tmp / "outputs")

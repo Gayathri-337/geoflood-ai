@@ -8,13 +8,14 @@ Interactive docs:              http://127.0.0.1:8000/docs
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request
+from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import SQLAlchemyError
 
 from backend.config import get_settings
 from backend.routers import analyses, auth, events, health, impact, predict, sources, stats, users
+from backend.security import access_policy
 from backend.services.inference import ModelService
 from backend.services.uploads import UploadRejected
 
@@ -58,15 +59,19 @@ async def upload_rejected_handler(request: Request, exc: UploadRejected):
     return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
 
 
+# Always public: health checks and login. The users router protects itself (admins only).
 app.include_router(health.router, prefix="/api")
 app.include_router(auth.router, prefix="/api")
 app.include_router(users.router, prefix="/api")
-app.include_router(sources.router, prefix="/api")
-app.include_router(events.router, prefix="/api")
-app.include_router(predict.router, prefix="/api")
-app.include_router(analyses.router, prefix="/api")
-app.include_router(impact.router, prefix="/api")
-app.include_router(stats.router, prefix="/api")
+
+# Data endpoints: one central rule (see backend/security.py, access_policy)
+policy = [Depends(access_policy)]
+app.include_router(sources.router, prefix="/api", dependencies=policy)
+app.include_router(events.router, prefix="/api", dependencies=policy)
+app.include_router(predict.router, prefix="/api", dependencies=policy)
+app.include_router(analyses.router, prefix="/api", dependencies=policy)
+app.include_router(impact.router, prefix="/api", dependencies=policy)
+app.include_router(stats.router, prefix="/api", dependencies=policy)
 
 
 @app.get("/", include_in_schema=False)

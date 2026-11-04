@@ -20,6 +20,7 @@ from rasterio.transform import from_origin
 from ai.src import config
 from backend.config import Settings, get_settings
 from backend.main import app
+from backend.security import access_policy
 from backend.services.inference import ModelService
 
 SEP = "=" * 70
@@ -65,6 +66,7 @@ def main():
 
     with tempfile.TemporaryDirectory() as tmp_name, TestClient(app) as client:   # "with" runs the model load
         tmp = Path(tmp_name)
+        app.dependency_overrides[access_policy] = lambda: None
         base = make_settings(tmp)
         use(base)
 

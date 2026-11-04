@@ -16,6 +16,7 @@ from sqlalchemy.orm import sessionmaker
 from ai.src import config
 from backend.database import get_db
 from backend.main import app
+from backend.security import access_policy
 
 DB_DIR = config.ROOT / "database"
 SEP = "=" * 70
@@ -68,6 +69,7 @@ def main():
 
     app.dependency_overrides[get_db] = use_test_db
     client = TestClient(app)
+    app.dependency_overrides[access_policy] = lambda: None
 
     # ---------------------------------------------------------------- 1
     print("\n--- 1. Health checks ---")
