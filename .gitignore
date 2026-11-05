@@ -41,3 +41,6 @@ frontend/build/
 Thumbs.db
 .vscode/settings.json
 outputs/
+
+# Local OSM coverage scan output
+ai/results/osm_coverage.csv
