@@ -1,6 +1,7 @@
 import { Route, Routes } from "react-router-dom";
 import Layout from "./components/Layout.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
+import AnalysisPage from "./pages/AnalysisPage.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import Login from "./pages/Login.jsx";
 import NotFound from "./pages/NotFound.jsx";
@@ -12,6 +13,7 @@ export default function App() {
       <Route element={<ProtectedRoute />}>
         <Route element={<Layout />}>
           <Route index element={<Dashboard />} />
+          <Route path="analyses/:analysisId" element={<AnalysisPage />} />
         </Route>
       </Route>
       <Route path="*" element={<NotFound />} />

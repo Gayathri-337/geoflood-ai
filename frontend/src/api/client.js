@@ -95,7 +95,6 @@ async function request(path, { method = "GET", body, form, auth = true } = {}) {
   if (!response.ok) throw new ApiError(messageFrom(data, response.status), response.status);
   return data;
 }
-
 export const api = {
   // auth: false, so that a wrong password does not count as "your session ended"
   login: (username, password) =>
@@ -103,4 +102,16 @@ export const api = {
   me: () => request("/api/auth/me"),
   dashboard: () => request("/api/stats/dashboard"),
   analyses: (limit = 10) => request(`/api/analyses?limit=${encodeURIComponent(limit)}`),
+  analysis: (id) => request(`/api/analyses/${encodeURIComponent(id)}`),
+  zones: (id) => request(`/api/analyses/${encodeURIComponent(id)}/zones`),
+  impactSummary: (id) => request(`/api/analyses/${encodeURIComponent(id)}/impact`),
+  impactLayer: (id, layer) =>
+    request(`/api/analyses/${encodeURIComponent(id)}/impact/${encodeURIComponent(layer)}`),
+  computeImpact: (id, nearM) =>
+    request(`/api/analyses/${encodeURIComponent(id)}/impact?near_m=${encodeURIComponent(nearM)}`, {
+      method: "POST",
+    }),
 };
+
+
+

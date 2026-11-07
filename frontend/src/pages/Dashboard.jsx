@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { api } from "../api/client.js";
 import { formatDate, formatInt, formatKm2 } from "../format.js";
 
@@ -116,7 +117,9 @@ export default function Dashboard() {
             <tbody>
               {analyses.map((a) => (
                 <tr key={a.analysis_id}>
-                  <td>{a.analysis_id}</td>
+                  <td>
+                    <Link to={`/analyses/${a.analysis_id}`}>{a.analysis_id}</Link>
+                  </td>                  
                   <td>{a.original_filename}</td>
                   <td>{a.event_id}</td>
                   <td className="text-end">{formatKm2(a.water_area_km2)}</td>
