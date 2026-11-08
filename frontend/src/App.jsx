@@ -5,6 +5,7 @@ import AnalysisPage from "./pages/AnalysisPage.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import Login from "./pages/Login.jsx";
 import NotFound from "./pages/NotFound.jsx";
+import UploadPage from "./pages/UploadPage.jsx";
 
 export default function App() {
   return (
@@ -14,6 +15,7 @@ export default function App() {
         <Route element={<Layout />}>
           <Route index element={<Dashboard />} />
           <Route path="analyses/:analysisId" element={<AnalysisPage />} />
+          <Route path="upload" element={<UploadPage />} />
         </Route>
       </Route>
       <Route path="*" element={<NotFound />} />

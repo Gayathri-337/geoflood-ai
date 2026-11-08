@@ -62,13 +62,15 @@ function messageFrom(data, status) {
   return `The server answered with an error (${status}).`;
 }
 
-async function request(path, { method = "GET", body, form, auth = true } = {}) {
+async function request(path, { method = "GET", body, form, formData, auth = true } = {}) {
   const headers = {};
   const token = auth ? tokenStore.get() : null;
   if (token) headers.Authorization = `Bearer ${token}`;
 
   let payload;
-  if (form) {
+  if (formData) {
+    payload = formData; // the browser adds the multipart Content-Type (with its boundary) itself
+  } else if (form) {
     headers["Content-Type"] = "application/x-www-form-urlencoded";
     payload = new URLSearchParams(form).toString();
   } else if (body !== undefined) {
@@ -95,6 +97,7 @@ async function request(path, { method = "GET", body, form, auth = true } = {}) {
   if (!response.ok) throw new ApiError(messageFrom(data, response.status), response.status);
   return data;
 }
+
 export const api = {
   // auth: false, so that a wrong password does not count as "your session ended"
   login: (username, password) =>
@@ -111,7 +114,15 @@ export const api = {
     request(`/api/analyses/${encodeURIComponent(id)}/impact?near_m=${encodeURIComponent(nearM)}`, {
       method: "POST",
     }),
+  events: (limit = 100) => request(`/api/events?limit=${encodeURIComponent(limit)}`),
+  sources: () => request("/api/sources"),
+  createEvent: (event) => request("/api/events", { method: "POST", body: event }),
+  createAnalysis: ({ file, baselineFile, eventId, sourceId }) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("event_id", String(eventId));
+    formData.append("source_id", String(sourceId));
+    if (baselineFile) formData.append("baseline_file", baselineFile);
+    return request("/api/analyses", { method: "POST", formData });
+  },
 };
-
-
-

@@ -1,6 +1,8 @@
 import { Link, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/authContext.js";
 
+const ANALYST_ROLES = new Set(["analyst", "admin"]);
+
 export default function Layout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -14,9 +16,16 @@ export default function Layout() {
     <div className="d-flex flex-column min-vh-100">
       <nav className="navbar navbar-dark bg-dark">
         <div className="container-fluid">
-          <Link className="navbar-brand" to="/">
-            GeoFlood AI
-          </Link>
+          <div className="d-flex align-items-center gap-4">
+            <Link className="navbar-brand" to="/">
+              GeoFlood AI
+            </Link>
+            {ANALYST_ROLES.has(user.role) && (
+              <Link className="nav-link text-light p-0" to="/upload">
+                New analysis
+              </Link>
+            )}
+          </div>
           <div className="d-flex align-items-center gap-3 text-light">
             <span>{user.full_name || user.username}</span>
             <span className="badge text-bg-secondary">{user.role}</span>
