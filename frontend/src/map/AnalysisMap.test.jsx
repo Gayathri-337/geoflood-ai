@@ -39,14 +39,15 @@ describe("AnalysisMap", () => {
   });
 
   it("draws each visible layer in its own pane, stacked in the right order", () => {
-    render(<AnalysisMap bounds={ANALYSIS.bounds_wgs84} layers={LAYERS} visible={ALL} />);
+    // an empty collection draws nothing, so give farmland any non-empty collection for this check
+    render(<AnalysisMap bounds={ANALYSIS.bounds_wgs84} layers={{ ...LAYERS, farmland: ZONES }} visible={ALL} />);
     const z = (name) => Number(screen.getByTestId(`pane-${name}`).dataset.z);
-    expect(z("zones")).toBeGreaterThan(z("farmland") || 0);
+    expect(z("zones")).toBeGreaterThan(z("farmland"));
     expect(z("roads")).toBeGreaterThan(z("zones"));
     expect(z("villages")).toBeGreaterThan(z("roads"));
     expect(z("infrastructure")).toBeGreaterThan(z("villages"));
     expect(screen.getByTestId("pane-zones").querySelector("[data-count]").dataset.count).toBe("2");
-    expect(screen.getByTestId("pane-roads").querySelector("[data-count]").dataset.count).toBe("1");
+    expect(screen.getByTestId("pane-roads").querySelector("[data-count]").dataset.count).toBe("2");
   });
 
   it("draws nothing for an empty collection or missing data", () => {

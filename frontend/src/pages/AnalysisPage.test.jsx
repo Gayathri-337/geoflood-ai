@@ -33,7 +33,7 @@ const ROUTES = {
   [`${BASE}/impact/farmland`]: [200, FARMLAND],
   [`${BASE}/impact/infrastructure`]: [200, INFRASTRUCTURE],
 };
-const RUN = { analysis_id: 2, zone_type: "new_flood", compared_against: "x", near_m: 500, villages: 2, roads: 1, farmland: 0, infrastructure: 1 };
+const RUN = { analysis_id: 2, zone_type: "new_flood", compared_against: "x", near_m: 500, villages: 2, roads: 1, bridges: 1, farmland: 0, infrastructure: 1 };
 
 function renderPage(path = "/analyses/2", role = "analyst") {
   return render(
@@ -63,7 +63,7 @@ describe("analysis page", () => {
 
     const map = await stub();
     expect(JSON.parse(map.dataset.bounds)).toEqual(ANALYSIS.bounds_wgs84);
-    expect(map.dataset.counts).toBe("farmland:0,infrastructure:1,roads:1,villages:1,zones:2");
+    expect(map.dataset.counts).toBe("farmland:0,infrastructure:1,roads:2,villages:1,zones:2");
     expect(map.dataset.visible).toBe("farmland,infrastructure,roads,villages,zones");
   });
 
@@ -71,12 +71,32 @@ describe("analysis page", () => {
     mockApi(ROUTES);
     renderPage();
     await stub();
-    expect(screen.getByRole("checkbox", { name: /Affected roads/ })).toHaveAccessibleName(/1 \(58 m flooded\)/);
+    expect(screen.getByRole("checkbox", { name: /Affected roads/ })).toHaveAccessibleName(
+      /1 \(120 m flooded\), plus 1 bridge over water/,
+    );
     expect(screen.getByRole("checkbox", { name: /Affected villages/ })).toHaveAccessibleName(/1 \(0 inside, 1 near\)/);
     expect(screen.getByRole("checkbox", { name: /Affected farmland/ })).toHaveAccessibleName(/0 \(0\.000 km² flooded\)/);
     expect(screen.getByRole("checkbox", { name: /Detected water zones/ })).toHaveAccessibleName(/2 polygons/);
     expect(screen.getByText("Permanent water (on the baseline)")).toBeInTheDocument();
-    expect(screen.getByText("New water vs baseline")).toBeInTheDocument();
+    expect(screen.getAllByText("New water vs baseline")).toHaveLength(2); // the figures list and the legend
+  });
+
+  it("explains bridges in the legend", async () => {
+    mockApi(ROUTES);
+    renderPage();
+    await stub();
+    expect(screen.getByText("Bridge over the water (not counted as flooded)")).toBeInTheDocument();
+  });
+
+  it("shows no bridge legend when there are no bridges", async () => {
+    mockApi({
+      ...ROUTES,
+      [`${BASE}/impact`]: [200, { ...SUMMARY, roads: { count: 1, flooded_length_km: 0.12, bridges: { count: 0, length_km: 0 } } }],
+    });
+    renderPage();
+    await stub();
+    expect(screen.queryByText(/Bridge over the water/)).toBeNull();
+    expect(screen.getByRole("checkbox", { name: /Affected roads/ })).not.toHaveAccessibleName(/bridge/i);
   });
 
   it("switches a layer off and on with its checkbox", async () => {
@@ -135,19 +155,18 @@ describe("analysis page", () => {
     await vi.waitFor(() => expect(callsTo(fetchFn, "POST /api/analyses/2/impact?near_m=300")).toHaveLength(1));
   });
 
-  it("refuses a distance that is empty, negative or too large, without calling the server", async () => {
+  it.each(["20000", "-5", ""])("refuses the distance '%s' without calling the server", async (bad) => {
     const fetchFn = mockApi(ROUTES);
     renderPage();
     const user = userEvent.setup();
     await stub();
-    const input = screen.getByLabelText(/near.*distance/i);
 
-    for (const bad of ["20000", "-5", ""]) {
-      await user.clear(input);
-      if (bad) await user.type(input, bad);
-      await user.click(screen.getByRole("button", { name: /compute impact/i }));
-      expect(await screen.findByRole("alert")).toHaveTextContent(/between 0 and 10000/);
-    }
+    const input = screen.getByLabelText(/near.*distance/i);
+    await user.clear(input);
+    if (bad) await user.type(input, bad);
+    await user.click(screen.getByRole("button", { name: /compute impact/i }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(/between 0 and 10000/);
     expect(fetchFn.mock.calls.filter(([, options]) => options.method === "POST")).toHaveLength(0);
   });
 
@@ -192,7 +211,7 @@ describe("analysis page", () => {
     expect(screen.getByTestId("fig-permanent")).toHaveTextContent("–");
     expect(screen.getByTestId("fig-new")).toHaveTextContent("–");
     expect(screen.getByTestId("fig-water")).toHaveTextContent("0.54");
-    expect(screen.getByText(/no baseline layer was used/i, { selector: "p" })).toBeInTheDocument();
+    expect(screen.getByText(/permanent and new water are not separated/i)).toBeInTheDocument();
     expect(screen.getByText(/Detected water \(no baseline\)/)).toBeInTheDocument();
   });
 

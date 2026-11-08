@@ -7,6 +7,7 @@ export const COLORS = {
   roads: "#d7191c",
   villages: "#6a3d9a",
   infrastructure: "#111111",
+  bridges: "#6b7280", // grey: a bridge over the detected water
 };
 
 // Stacking order on the map: a higher number is drawn above a lower one.

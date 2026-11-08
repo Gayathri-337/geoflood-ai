@@ -12,7 +12,8 @@ class ImpactRunOut(BaseModel):
     compared_against: str
     near_m: float                       # distance used for "near the flood" (villages and infrastructure)
     villages: int
-    roads: int
+    roads: int                          # flooded roads, bridges NOT included
+    bridges: int = 0                    # roads on bridges over the detected water (shown, not counted as flooded)
     farmland: int
     infrastructure: int
 
@@ -23,9 +24,15 @@ class VillageSummary(BaseModel):
     near: int
 
 
-class RoadSummary(BaseModel):
+class BridgeSummary(BaseModel):
     count: int
+    length_km: float                    # length of the bridges that lies over the detected water
+
+
+class RoadSummary(BaseModel):
+    count: int                          # flooded roads, bridges NOT included
     flooded_length_km: float
+    bridges: BridgeSummary
 
 
 class FarmlandSummary(BaseModel):
@@ -51,4 +58,3 @@ class ImpactSummaryOut(BaseModel):
     farmland: FarmlandSummary
     infrastructure: InfrastructureSummary
     note: str
-

@@ -1,3 +1,4 @@
+// Sample values for tests, NOT real results.
 export const ANALYSIS = {
   analysis_id: 2,
   event_id: 2,
@@ -56,15 +57,22 @@ export const ZONES = collection([
   },
 ]);
 
+// one bridge over the water (not counted as flooded) and one really flooded road
 export const ROADS = collection([
   {
     type: "Feature",
-    geometry: {
-      type: "MultiLineString",
-      coordinates: [[[93.755366, 26.583304], [93.754947, 26.583673]]],
-    },
+    geometry: { type: "MultiLineString", coordinates: [[[93.755366, 26.583304], [93.754947, 26.583673]]] },
     properties: {
-      feature_id: 9, name: null, category: "trunk", source_ref: "way/1", flooded_length_km: 0.058488, flooded_pct: 53.632,
+      feature_id: 9, name: null, category: "trunk", source_ref: "way/1",
+      flooded_length_km: 0.058488, flooded_pct: 53.632, on_bridge: true,
+    },
+  },
+  {
+    type: "Feature",
+    geometry: { type: "MultiLineString", coordinates: [[[93.77, 26.56], [93.771, 26.5605]]] },
+    properties: {
+      feature_id: 10, name: "Test Road", category: "residential", source_ref: "way/2",
+      flooded_length_km: 0.12, flooded_pct: 80, on_bridge: false,
     },
   },
 ]);
@@ -96,7 +104,7 @@ export const SUMMARY = {
   baseline_method: "jrc",
   last_computed_at: "2026-11-03T17:06:12Z",
   villages: { count: 1, inside: 0, near: 1 },
-  roads: { count: 1, flooded_length_km: 0.058488 },
+  roads: { count: 1, flooded_length_km: 0.12, bridges: { count: 1, length_km: 0.058488 } },
   farmland: { count: 0, flooded_area_km2: 0 },
   infrastructure: { count: 1, inside: 0, near: 1, by_category: { college: { inside: 0, near: 1 } } },
   note: "Zero everywhere can mean either that impact has not been computed yet or that nothing was affected.",

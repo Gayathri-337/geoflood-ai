@@ -39,13 +39,19 @@ function zonePopup(p) {
   ]);
 }
 
+
+
 function roadPopup(p) {
-  return buildPopup(nameOr(p, "Unnamed road"), [
-    ["Road class", text(p.category)],
-    ["Flooded length", formatLength(p.flooded_length_km)],
+  const rows = [["Road class", text(p.category)]];
+  if (p.on_bridge) {
+    rows.push(["Bridge", "crosses the detected water above it, so it is not counted as a flooded road"]);
+  }
+  rows.push(
+    [p.on_bridge ? "Length over the water" : "Flooded length", formatLength(p.flooded_length_km)],
     ["Share of this mapped road", formatPercent(p.flooded_pct)],
     ["OpenStreetMap", text(p.source_ref)],
-  ]);
+  );
+  return buildPopup(nameOr(p, "Unnamed road"), rows);
 }
 
 function farmlandPopup(p) {

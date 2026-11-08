@@ -1,8 +1,12 @@
 """
-GeoFlood AI backend - impact analysis (Phase 17b).
+GeoFlood AI backend - impact analysis (Phase 17b; bridges separated in Phase 21c).
 
 The spatial work is done by the PostGIS function compute_impact() from database/impact_analysis.sql.
 This module calls it and reads the stored results back.
+
+A road counts as a BRIDGE when its OpenStreetMap tags say bridge=<anything except 'no'>. Such a road
+crosses the water above it, so it is shown separately and not counted as a flooded road. The flag is
+worked out from the stored tags each time, so it needs no extra database column.
 """
 
 import json
@@ -17,8 +21,10 @@ COMPARED_AGAINST = {
     "water": "all detected water (no baseline layer was used)",
     "new_flood": "new flood: water that is not on the baseline layer",
 }
-LAYER_KEYS = {"village": "villages", "road": "roads", "farmland": "farmland",
-              "infrastructure": "infrastructure"}
+LAYER_KEYS = {"village": "villages", "road": "roads", "farmland": "farmland", "infrastructure": "infrastructure"}
+
+# SQL condition (uses the alias f = reference_features): true for a road mapped as a bridge
+BRIDGE = "(coalesce(f.properties->'tags'->>'bridge', 'no') NOT IN ('no', ''))"
 
 # One query per layer. The layer name from the URL only selects an entry here; it is never put into SQL.
 LAYER_SQL = {
@@ -28,9 +34,10 @@ LAYER_SQL = {
           FROM affected_villages t JOIN reference_features f ON f.feature_id = t.feature_id
          WHERE t.analysis_id = :aid AND t.zone_type = :zone
          ORDER BY f.name, f.feature_id""",
-    "roads": """
+    "roads": f"""
         SELECT f.feature_id, f.name, f.category, f.source_ref,
-               t.flooded_length_km, t.flooded_pct, ST_AsGeoJSON(t.flooded_geom, 6) AS geojson
+               t.flooded_length_km, t.flooded_pct, {BRIDGE} AS on_bridge,
+               ST_AsGeoJSON(t.flooded_geom, 6) AS geojson
           FROM affected_roads t JOIN reference_features f ON f.feature_id = t.feature_id
          WHERE t.analysis_id = :aid AND t.zone_type = :zone
          ORDER BY f.name, f.feature_id""",
@@ -64,12 +71,23 @@ def resolve_zone(baseline_method: str, zone_type: Optional[str]) -> str:
 
 
 def run_compute(db: Session, analysis_id: int, zone_type: str, near_m: float) -> dict:
-    """Call compute_impact(). The caller commits. The casts make the driver's parameter types explicit."""
+    """
+    Call compute_impact() (the caller commits). Roads on bridges are taken out of the 'roads' count
+    and reported as 'bridges'. The casts make the driver's parameter types explicit.
+    """
     rows = db.execute(
         text("SELECT layer_name, features_affected FROM compute_impact("
              "CAST(:aid AS bigint), CAST(:zone AS text), CAST(:near AS numeric))"),
         {"aid": analysis_id, "zone": zone_type, "near": near_m}).all()
-    return {LAYER_KEYS[name]: int(n) for name, n in rows}
+    counts = {LAYER_KEYS[name]: int(n) for name, n in rows}
+
+    bridges = int(db.execute(
+        text(f"SELECT count(*) FROM affected_roads t JOIN reference_features f ON f.feature_id = t.feature_id "
+             f"WHERE t.analysis_id = :aid AND t.zone_type = :zone AND {BRIDGE}"),
+        {"aid": analysis_id, "zone": zone_type}).scalar_one())
+    counts["roads"] = max(counts.get("roads", 0) - bridges, 0)
+    counts["bridges"] = bridges
+    return counts
 
 
 def summarize(db: Session, analysis_id: int, zone_type: str) -> dict:
@@ -79,9 +97,14 @@ def summarize(db: Session, analysis_id: int, zone_type: str) -> dict:
         SELECT count(*) AS n, count(*) FILTER (WHERE relation = 'inside') AS inside_n,
                count(*) FILTER (WHERE relation = 'near') AS near_n, max(created_at) AS last
           FROM affected_villages WHERE analysis_id = :aid AND zone_type = :zone"""), p).mappings().one()
-    r = db.execute(text("""
-        SELECT count(*) AS n, coalesce(sum(flooded_length_km), 0) AS total, max(created_at) AS last
-          FROM affected_roads WHERE analysis_id = :aid AND zone_type = :zone"""), p).mappings().one()
+    r = db.execute(text(f"""
+        SELECT count(*) FILTER (WHERE NOT {BRIDGE}) AS n,
+               coalesce(sum(t.flooded_length_km) FILTER (WHERE NOT {BRIDGE}), 0) AS total,
+               count(*) FILTER (WHERE {BRIDGE}) AS bridge_n,
+               coalesce(sum(t.flooded_length_km) FILTER (WHERE {BRIDGE}), 0) AS bridge_total,
+               max(t.created_at) AS last
+          FROM affected_roads t JOIN reference_features f ON f.feature_id = t.feature_id
+         WHERE t.analysis_id = :aid AND t.zone_type = :zone"""), p).mappings().one()
     a = db.execute(text("""
         SELECT count(*) AS n, coalesce(sum(flooded_area_km2), 0) AS total, max(created_at) AS last
           FROM agricultural_areas WHERE analysis_id = :aid AND zone_type = :zone"""), p).mappings().one()
@@ -102,7 +125,11 @@ def summarize(db: Session, analysis_id: int, zone_type: str) -> dict:
     return {
         "last_computed_at": max(stamps) if stamps else None,
         "villages": {"count": int(v["n"]), "inside": int(v["inside_n"]), "near": int(v["near_n"])},
-        "roads": {"count": int(r["n"]), "flooded_length_km": round(float(r["total"]), 6)},
+        "roads": {
+            "count": int(r["n"]),
+            "flooded_length_km": round(float(r["total"]), 6),
+            "bridges": {"count": int(r["bridge_n"]), "length_km": round(float(r["bridge_total"]), 6)},
+        },
         "farmland": {"count": int(a["n"]), "flooded_area_km2": round(float(a["total"]), 6)},
         "infrastructure": {"count": int(i["n"]), "inside": int(i["inside_n"]),
                            "near": int(i["near_n"]), "by_category": dict(by_category)},

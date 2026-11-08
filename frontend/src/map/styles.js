@@ -8,7 +8,13 @@ export function zoneStyle(feature) {
   return { color, weight: 1, fillColor: color, fillOpacity: 0.45 };
 }
 
-export function roadStyle() {
+
+
+export function roadStyle(feature) {
+  if (feature?.properties?.on_bridge) {
+    // a bridge over the detected water: shown, but not counted as flooded
+    return { color: COLORS.bridges, weight: 5, opacity: 0.95, dashArray: "8 6" };
+  }
   return { color: COLORS.roads, weight: 5, opacity: 0.95 };
 }
 
