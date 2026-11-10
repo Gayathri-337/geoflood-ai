@@ -125,4 +125,6 @@ export const api = {
     if (baselineFile) formData.append("baseline_file", baselineFile);
     return request("/api/analyses", { method: "POST", formData });
   },
+  severity: (id) => request(`/api/analyses/${encodeURIComponent(id)}/severity`),
+  saveSeverity: (id) => request(`/api/analyses/${encodeURIComponent(id)}/severity`, { method: "POST" }),
 };

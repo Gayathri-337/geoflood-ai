@@ -11,6 +11,7 @@ import {
   formatPercent,
 } from "../format.js";
 import AnalysisMap from "../map/AnalysisMap.jsx";
+import SeverityCard from "../components/SeverityCard.jsx";
 import {
   COLORS,
   IMPACT_LAYERS,
@@ -100,6 +101,8 @@ export default function AnalysisPage() {
   const [computing, setComputing] = useState(false);
   const [computeError, setComputeError] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
+  const [severityKey, setSeverityKey] = useState(0);
+  const [savedSeverity, setSavedSeverity] = useState(null);
 
   useEffect(() => {
     if (!idValid) return undefined;
@@ -178,6 +181,7 @@ export default function AnalysisPage() {
         ...impact,
         version: previous.version + 1,
       }));
+      setSeverityKey((key) => key + 1);
     } catch (err) {
       setComputeError(err.message);
     } finally {
@@ -245,7 +249,7 @@ export default function AnalysisPage() {
       <p className="text-muted small">
         Event {a.event_id} · created {formatDate(a.created_at)} · model{" "}
         {a.model_name} (threshold {a.threshold}) · severity:{" "}
-        {a.severity || "not classified yet"}
+        {savedSeverity || a.severity || "not classified yet"}
       </p>
 
       {a.warnings.length > 0 && (
@@ -381,6 +385,13 @@ export default function AnalysisPage() {
               ))}
             </div>
           </div>
+
+          <SeverityCard
+            analysisId={analysisId}
+            canSave={canCompute}
+            refreshKey={severityKey}
+            onSaved={setSavedSeverity}
+          />
 
           <div className="card">
             <div className="card-body">
