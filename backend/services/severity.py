@@ -21,7 +21,7 @@ THRESHOLDS = {
     "road_km": (0.5, 2.0, 5.0),       # km of flooded road, bridges excluded
     "villages": (1, 3, 6),            # villages INSIDE the flooded area
     "farmland_km2": (0.1, 1.0, 5.0),  # km2 of flooded farmland
-    "facilities": (None, 1, 3),       # facilities INSIDE the flooded area: a single one is already 'high'
+        "facilities": (1, 2, 3),          # facilities INSIDE the flooded area (hospitals, clinics, schools, shelters...)
 }
 
 UNITS = {"area_pct": "%", "road_km": "km", "villages": "", "farmland_km2": "km²", "facilities": ""}

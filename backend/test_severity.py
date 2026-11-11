@@ -58,10 +58,11 @@ def test_boundaries():
         assert sev.level_index(0, limits) == 0
         assert sev.level_index(10 ** 9, limits) == 3
     ok("at each limit the level starts; just below it the level is the one before; 0 is low and a huge value is severe")
-    assert sev.level_index(0, sev.THRESHOLDS["facilities"]) == 0
-    assert sev.level_index(1, sev.THRESHOLDS["facilities"]) == 2
-    assert sev.level_index(3, sev.THRESHOLDS["facilities"]) == 3
-    ok("facilities: none is low, a single facility inside is already high, three or more is severe")
+    facilities = sev.THRESHOLDS["facilities"]
+    assert [sev.level_index(n, facilities) for n in (0, 1, 2, 3, 10)] == [0, 1, 2, 3, 3]
+    ok("facilities inside: none is low, one is moderate, two are high, three or more are severe")
+    assert [sev.level_index(n, (None, 1, 3)) for n in (0, 1, 2, 3)] == [0, 2, 2, 3]
+    ok("a rule with a skipped step still works (None = no 'moderate' step: the first limit starts at 'high')")
 
 
 def test_overall_level():
@@ -71,8 +72,10 @@ def test_overall_level():
     ok("impact not computed: only the water area counts; impact indicators have no value and no level")
 
     r = sev.classify(analysis(new_pct=0.5), summary(facilities=1))
+    assert r["level"] == "moderate" and r["driven_by"] == ["facilities"] and levels(r)["area_pct"] == "low"
+    r = sev.classify(analysis(new_pct=0.5), summary(facilities=2))
     assert r["level"] == "high" and r["driven_by"] == ["facilities"] and levels(r)["area_pct"] == "low"
-    ok("the worst indicator wins: tiny water area but one facility inside -> high, decided by the facilities")
+    ok("the worst indicator wins: a tiny water area but 1 facility inside -> moderate, 2 facilities -> high")
 
     r = sev.classify(analysis(new_pct=12.0), summary(road_km=2.5))
     assert r["level"] == "high" and r["driven_by"] == ["area_pct", "road_km"]
