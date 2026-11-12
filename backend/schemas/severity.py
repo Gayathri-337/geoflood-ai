@@ -14,6 +14,8 @@ class IndicatorOut(BaseModel):
     value: Optional[float]            # None when the impact has not been computed
     level: Optional[Level]
     thresholds: dict[str, Optional[float]]
+    detail: Optional[str] = None      # e.g. "1 critical" for the facilities indicator
+    note: Optional[str] = None        # a sentence explaining a special rule
 
 
 class SeverityOut(BaseModel):

@@ -106,8 +106,12 @@ export default function SeverityCard({ analysisId, canSave, refreshKey = 0, onSa
                     <td>
                       {indicator.label}
                       <div className="text-muted fw-normal">{ruleText(indicator)}</div>
+                      {indicator.note && <div className="text-muted fw-normal">{indicator.note}</div>}
                     </td>
-                    <td className="text-end">{valueText(indicator)}</td>
+                    <td className="text-end">
+                      {valueText(indicator)}
+                      {indicator.detail && <div className="text-muted fw-normal">{indicator.detail}</div>}
+                    </td>
                     <td>{indicator.level ? <LevelBadge level={indicator.level} /> : "–"}</td>
                   </tr>
                 ))}

@@ -2,7 +2,8 @@
 GeoFlood AI - Phase 25 test: the severity endpoints, with the REAL access rules (login required).
 
 The expected LEVELS are derived from the rules module (so changing a threshold does not break this test);
-the expected VALUES come from the fabricated sample layout of database/sample_data.sql.
+the expected VALUES come from the fabricated sample layout of database/sample_data.sql, where one hospital
+(a critical facility) is INSIDE the flooded area.
 
 DESTRUCTIVE: rebuilds every table in TEST_DATABASE_URL.
 Usage (project root):  python -m backend.test_severity_api
@@ -44,13 +45,13 @@ def by_key(body):
     return {i["key"]: i for i in body["indicators"]}
 
 
-def expected_level(key, value):
-    return sev.LEVELS[sev.level_index(value, sev.THRESHOLDS[key])]
+def expected_level(key, value, critical=0):
+    return sev.LEVELS[sev.indicator_index(key, value, critical)]
 
 
-def expected_overall(values):
+def expected_overall(values, critical=0):
     """(level, driven_by) for a dict of indicator values, worked out from the rules module."""
-    indexes = {key: sev.level_index(value, sev.THRESHOLDS[key]) for key, value in values.items()}
+    indexes = {key: sev.indicator_index(key, value, critical) for key, value in values.items()}
     top = max(indexes.values())
     return sev.LEVELS[top], ([key for key in sev.ORDER if indexes.get(key) == top] if top > 0 else [])
 
@@ -122,6 +123,7 @@ def main():
     assert body["impact_included"] is False and body["stored_severity"] is None
     assert all(ind[k]["value"] is None and ind[k]["level"] is None
                for k in ("road_km", "villages", "farmland_km2", "facilities"))
+    assert ind["facilities"]["detail"] is None and ind["facilities"]["note"]
     ok(f"the sample analysis (6.0% new water) is '{body['level']}' on the water area alone; impact indicators are empty")
 
     # ------------------------------------------------------------ 2
@@ -133,14 +135,16 @@ def main():
     assert 1.545 <= ind["road_km"]["value"] <= 1.555
     assert ind["villages"]["value"] == 2
     assert 0.440 <= ind["farmland_km2"]["value"] <= 0.443
-    assert ind["facilities"]["value"] == 1
+    assert ind["facilities"]["value"] == 1 and ind["facilities"]["detail"] == "1 critical"
+    assert ind["facilities"]["level"] in ("high", "severe")          # a hospital inside is at least 'high'
     values = {"area_pct": 6.0, **{k: ind[k]["value"] for k in ("road_km", "villages", "farmland_km2", "facilities")}}
     for key, value in values.items():
-        assert ind[key]["level"] == expected_level(key, value), key
-    saved_level, driven = expected_overall(values)
+        assert ind[key]["level"] == expected_level(key, value, critical=1), key
+    saved_level, driven = expected_overall(values, critical=1)
     assert (body["level"], body["driven_by"]) == (saved_level, driven)
+    assert saved_level in ("high", "severe")
     assert scalar(cur, "SELECT severity FROM flood_analysis WHERE analysis_id = %s", (aid,)) is None
-    ok(f"roads 1.55 km, villages 2, farmland 0.44 km2, facilities 1: overall '{saved_level}', decided by "
+    ok(f"roads 1.55 km, villages 2, farmland 0.44 km2, 1 hospital inside: overall '{saved_level}', decided by "
        f"{', '.join(driven)}; reading saved nothing")
 
     # ------------------------------------------------------------ 3

@@ -23,13 +23,17 @@ def analysis(baseline="jrc", new_pct=0.0, water_pct=0.0):
     return {"baseline_method": baseline, "new_flood_pct_of_valid": new_pct, "water_pct_of_valid": water_pct}
 
 
-def summary(road_km=0.0, villages=0, farmland_km2=0.0, facilities=0, computed=True):
+def summary(road_km=0.0, villages=0, farmland_km2=0.0, facilities=None, computed=True):
+    """facilities: a number (that many schools) or a dict of facilities INSIDE per category, e.g. {"hospital": 1}."""
+    categories = facilities if isinstance(facilities, dict) else ({"school": facilities} if facilities else {})
+    total = sum(categories.values())
     return {
         "last_computed_at": "2026-11-08T16:00:00Z" if computed else None,
         "villages": {"count": villages, "inside": villages, "near": 0},
         "roads": {"count": 1, "flooded_length_km": road_km, "bridges": {"count": 0, "length_km": 0}},
         "farmland": {"count": 0, "flooded_area_km2": farmland_km2},
-        "infrastructure": {"count": facilities, "inside": facilities, "near": 0, "by_category": {}},
+        "infrastructure": {"count": total, "inside": total, "near": 0,
+                           "by_category": {c: {"inside": n, "near": 0} for c, n in categories.items()}},
     }
 
 
@@ -44,6 +48,9 @@ def test_rules_are_sane():
         real = [x for x in limits if x is not None]
         assert len(limits) == 3 and real == sorted(real) and len(set(real)) == len(real), key
     ok("every indicator has 3 steps, strictly increasing (a step may be skipped), and a unit")
+    assert set(sev.CRITICAL_FACILITIES) == {"hospital", "clinic", "police", "fire_station"}
+    assert "shelter" not in sev.CRITICAL_FACILITIES and sev.LEVELS[sev.CRITICAL_MIN_INDEX] == "high"
+    ok("critical facilities: hospital, clinic, police, fire_station (a shelter is not critical); one is at least 'high'")
 
 
 def test_boundaries():
@@ -90,6 +97,40 @@ def test_overall_level():
     ok("everything at the top -> severe, decided by all five")
 
 
+def test_facility_rule():
+    def facility(**inside):
+        r = sev.classify(analysis(new_pct=0.1), summary(facilities=inside))
+        item = next(i for i in r["indicators"] if i["key"] == "facilities")
+        return r, item
+
+    expectations = [
+        ({"school": 1}, "moderate"), ({"college": 1}, "moderate"), ({"shelter": 1}, "moderate"),
+        ({"unknown": 1}, "moderate"),
+        ({"hospital": 1}, "high"), ({"clinic": 1}, "high"), ({"police": 1}, "high"), ({"fire_station": 1}, "high"),
+        ({"school": 2}, "high"), ({"school": 1, "college": 1}, "high"),
+        ({"hospital": 1, "clinic": 1}, "high"),
+        ({"school": 3}, "severe"), ({"hospital": 2, "school": 1}, "severe"), ({"shelter": 3}, "severe"),
+    ]
+    for inside, level in expectations:
+        r, item = facility(**inside)
+        assert item["level"] == level and r["level"] == level, (inside, item["level"], r["level"])
+    ok("1 ordinary facility is moderate; 1 critical one, or 2 of any kind, is high; 3 or more is severe")
+
+    r, item = facility(hospital=1, school=2)
+    assert item["detail"] == "1 critical" and "hospital" in item["note"] and "schools" in item["note"]
+    ok("the facilities indicator says how many of them are critical and explains the rule")
+
+    r = sev.classify(analysis(new_pct=0.1), summary(computed=False, facilities={"hospital": 1}))
+    item = next(i for i in r["indicators"] if i["key"] == "facilities")
+    assert item["value"] is None and item["level"] is None and item["detail"] is None and r["level"] == "low"
+    r = sev.classify(analysis(new_pct=0.1), summary())
+    assert next(i for i in r["indicators"] if i["key"] == "facilities")["detail"] == "0 critical"
+    assert sev.indicator_index("facilities", 1, critical_inside=1) == 2
+    assert sev.indicator_index("facilities", 1, critical_inside=0) == 1
+    assert sev.indicator_index("road_km", 1.0, critical_inside=5) == 1       # only facilities use the critical rule
+    ok("without computed impact the facilities have no level; the critical rule affects only the facilities indicator")
+
+
 def test_baseline_choice():
     r = sev.classify(analysis("none", new_pct=None, water_pct=12.0), None)
     assert r["level"] == "high" and "detected water" in r["indicators"][0]["label"]
@@ -132,8 +173,8 @@ def main():
     print("  GeoFlood AI - Phase 25 Severity Rules Test")
     print(SEP)
     print()
-    for test in (test_rules_are_sane, test_boundaries, test_overall_level, test_baseline_choice,
-                 test_robustness, test_worked_examples):
+    for test in (test_rules_are_sane, test_boundaries, test_overall_level, test_facility_rule,
+                 test_baseline_choice, test_robustness, test_worked_examples):
         test()
     print("\n" + SEP)
     print("  Severity rules tests passed.")

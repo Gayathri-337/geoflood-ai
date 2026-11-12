@@ -21,7 +21,7 @@ THRESHOLDS = {
     "road_km": (0.5, 2.0, 5.0),       # km of flooded road, bridges excluded
     "villages": (1, 3, 6),            # villages INSIDE the flooded area
     "farmland_km2": (0.1, 1.0, 5.0),  # km2 of flooded farmland
-        "facilities": (1, 2, 3),          # facilities INSIDE the flooded area (hospitals, clinics, schools, shelters...)
+    "facilities": (1, 2, 3),          # facilities INSIDE the flooded area, by number (a critical one is 'high' alone)
 }
 
 UNITS = {"area_pct": "%", "road_km": "km", "villages": "", "farmland_km2": "km²", "facilities": ""}
@@ -32,6 +32,26 @@ NOTE = (
     "The highest level reached by any indicator decides the overall level. OpenStreetMap is incomplete, so the "
     "impact indicators, and therefore the level, are lower bounds."
 )
+
+
+# OpenStreetMap `amenity` values that count as CRITICAL facilities: ONE of them inside the flooded area is
+# already 'high'. School, college and shelter are collected too, but they only count by number
+# (amenity=shelter in OpenStreetMap is usually a simple weather shelter, not an evacuation centre).
+CRITICAL_FACILITIES = ("hospital", "clinic", "police", "fire_station")
+CRITICAL_MIN_INDEX = 2   # 2 = 'high'
+
+FACILITY_NOTE = (
+    "A hospital, clinic, police station or fire station inside counts as high on its own. "
+    "Other facilities (schools, colleges, shelters) count by number."
+)
+
+
+def indicator_index(key, value, critical_inside=0):
+    """0 = low ... 3 = severe for one indicator. critical_inside only matters for the facilities indicator."""
+    index = level_index(value, THRESHOLDS[key])
+    if key == "facilities" and critical_inside >= 1:
+        index = max(index, CRITICAL_MIN_INDEX)
+    return index
 
 
 def level_index(value, limits):
@@ -58,6 +78,14 @@ def _dig(data, *path):
             return None
         data = data.get(key)
     return data
+
+
+def _critical_inside(summary):
+    """How many critical facilities are inside the flooded area, from the impact summary's categories."""
+    by_category = _dig(summary, "infrastructure", "by_category")
+    if not isinstance(by_category, dict):
+        return 0
+    return sum(int(_number(_dig(by_category, category, "inside")) or 0) for category in CRITICAL_FACILITIES)
 
 
 def _label(key, has_baseline):
@@ -88,11 +116,12 @@ def classify(analysis, summary):
         values["farmland_km2"] = _number(_dig(summary, "farmland", "flooded_area_km2")) or 0.0
         values["facilities"] = _number(_dig(summary, "infrastructure", "inside")) or 0.0
 
+    critical = _critical_inside(summary) if impact_included else 0
     indicators, indexes = [], {}
     for key in ORDER:
         limits = THRESHOLDS[key]
         value = values.get(key)
-        index = None if value is None else level_index(value, limits)
+        index = None if value is None else indicator_index(key, value, critical)
         if index is not None:
             indexes[key] = index
         indicators.append({
@@ -102,6 +131,8 @@ def classify(analysis, summary):
             "value": value,
             "level": None if index is None else LEVELS[index],
             "thresholds": {"moderate": limits[0], "high": limits[1], "severe": limits[2]},
+            "detail": f"{critical} critical" if key == "facilities" and value is not None else None,
+            "note": FACILITY_NOTE if key == "facilities" else None,
         })
 
     overall = max(indexes.values())      # the area indicator is always present

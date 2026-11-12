@@ -1,7 +1,7 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
-import { SEVERITY, SEVERITY_NO_IMPACT } from "../severityFixtures.js";
+import { SEVERITY, SEVERITY_NO_IMPACT, SEVERITY_SKIPPED_STEP } from "../severityFixtures.js";
 import { callsTo, mockApi } from "../testUtils.js";
 import SeverityCard from "./SeverityCard.jsx";
 
@@ -24,8 +24,24 @@ describe("severity card", () => {
     expect(within(table).getByText("0.00 km")).toBeInTheDocument();
     expect(within(table).getByText("0.000 km²")).toBeInTheDocument();
     expect(within(table).getByText("moderate from 2%, high from 10%, severe from 25%")).toBeInTheDocument();
-    expect(within(table).getByText("high from 1, severe from 3")).toBeInTheDocument(); // facilities have no 'moderate' step
+    expect(within(table).getByText("moderate from 1, high from 2, severe from 3")).toBeInTheDocument();
     expect(screen.getByText(/not calibrated against damage data/)).toBeInTheDocument();
+  });
+
+  it("explains the critical-facility rule and says how many of the facilities are critical", async () => {
+    mockApi({ [GET]: [200, SEVERITY] });
+    render(<SeverityCard analysisId="2" canSave />);
+    const table = await screen.findByRole("table");
+    expect(within(table).getByText("1 critical")).toBeInTheDocument();
+    expect(within(table).getByText(/inside counts as high on its own/)).toBeInTheDocument();
+  });
+
+  it("copes with a rule that has no 'moderate' step", async () => {
+    mockApi({ [GET]: [200, SEVERITY_SKIPPED_STEP] });
+    render(<SeverityCard analysisId="2" canSave />);
+    const table = await screen.findByRole("table");
+    expect(within(table).getByText("high from 1, severe from 3")).toBeInTheDocument();
+    expect(within(table).queryByText("1 critical")).toBeNull(); // no detail was sent
   });
 
   it("says when the impact has not been computed", async () => {
