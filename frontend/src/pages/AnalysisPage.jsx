@@ -246,8 +246,9 @@ export default function AnalysisPage() {
         Analysis {a.analysis_id}: {a.original_filename}
       </h1>
 
+
       <p className="text-muted small">
-        Event {a.event_id} · created {formatDate(a.created_at)} · model{" "}
+          <Link to={`/events/${a.event_id}`}>Event {a.event_id}</Link> · created {formatDate(a.created_at)} · model{" "}
         {a.model_name} (threshold {a.threshold}) · severity:{" "}
         {savedSeverity || a.severity || "not classified yet"}
       </p>

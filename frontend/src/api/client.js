@@ -127,4 +127,22 @@ export const api = {
   },
   severity: (id) => request(`/api/analyses/${encodeURIComponent(id)}/severity`),
   saveSeverity: (id) => request(`/api/analyses/${encodeURIComponent(id)}/severity`, { method: "POST" }),
+  
+  
+    event: (id) => request(`/api/events/${encodeURIComponent(id)}`),
+  analysesForEvent: (eventId, limit = 50) =>
+    request(`/api/analyses?event_id=${encodeURIComponent(eventId)}&limit=${encodeURIComponent(limit)}`),
+  eventActions: (eventId, { status, priority } = {}) => {
+    const query = new URLSearchParams({ limit: "200" });
+    if (status) query.set("status", status);
+    if (priority) query.set("priority", priority);
+    return request(`/api/events/${encodeURIComponent(eventId)}/actions?${query}`);
+  },
+  actionPins: (eventId) => request(`/api/events/${encodeURIComponent(eventId)}/actions/geojson`),
+  createAction: (eventId, body) =>
+    request(`/api/events/${encodeURIComponent(eventId)}/actions`, { method: "POST", body }),
+  updateAction: (id, changes) =>
+    request(`/api/actions/${encodeURIComponent(id)}`, { method: "PATCH", body: changes }),
+  deleteAction: (id) => request(`/api/actions/${encodeURIComponent(id)}`, { method: "DELETE" }),
+
 };

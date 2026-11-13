@@ -20,6 +20,9 @@ export default function Layout() {
             <Link className="navbar-brand" to="/">
               GeoFlood AI
             </Link>
+            <Link className="nav-link text-light p-0" to="/events">
+                Events
+            </Link>
             {ANALYST_ROLES.has(user.role) && (
               <Link className="nav-link text-light p-0" to="/upload">
                 New analysis
