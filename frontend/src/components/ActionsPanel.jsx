@@ -130,10 +130,14 @@ export default function ActionsPanel({
                         <button
                           type="button"
                           className="btn btn-outline-danger btn-sm"
+                          disabled={busyId === a.action_id}
                           onClick={() => setConfirmingId(a.action_id)}
                         >
                           Delete
                         </button>
+
+
+
                       ))}
                   </div>
                 )}

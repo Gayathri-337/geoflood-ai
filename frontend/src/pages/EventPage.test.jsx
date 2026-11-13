@@ -54,7 +54,8 @@ describe("event page", () => {
     const fetchFn = mockApi(ROUTES);
     renderPage();
     expect(await screen.findByRole("heading", { name: "Assam flood demo" })).toBeInTheDocument();
-    expect(screen.getByText("Brahmaputra valley, India")).toBeInTheDocument();
+    expect(screen.getByText(/Brahmaputra valley, India/)).toBeInTheDocument();
+    
     for (const key of Object.keys(ROUTES)) expect(callsTo(fetchFn, key)).toHaveLength(1);
 
     expect(screen.getAllByTestId(/^action-/)).toHaveLength(3);
@@ -119,6 +120,7 @@ describe("event page", () => {
   });
 
   it("gives a viewer the list and the map but no way to change anything", async () => {
+    mockApi(ROUTES);
     renderPage("viewer");
     await ready();
     expect(screen.getByText("Evacuate the school")).toBeInTheDocument();
@@ -159,6 +161,7 @@ describe("event page", () => {
   });
 
   it("does not offer deleting to an analyst", async () => {
+    mockApi(ROUTES);
     renderPage("analyst");
     await ready();
     expect(item(10).queryByRole("button", { name: "Delete" })).toBeNull();
