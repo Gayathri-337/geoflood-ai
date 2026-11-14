@@ -17,6 +17,8 @@ from typing import Optional
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
+from backend.services.coverage import describe_coverage
+
 COMPARED_AGAINST = {
     "water": "all detected water (no baseline layer was used)",
     "new_flood": "new flood: water that is not on the baseline layer",
@@ -149,3 +151,17 @@ def layer_geojson(db: Session, analysis_id: int, zone_type: str, layer: str) -> 
             "properties": {k: _plain(v) for k, v in row.items() if k != "geojson"},
         })
     return {"type": "FeatureCollection", "zone_type": zone_type, "features": features}
+
+
+def reference_coverage(db: Session, analysis_id: int) -> dict:
+    """How many reference features (per layer) lie inside the image of this analysis. Read-only."""
+    row = db.execute(text("""
+        SELECT count(*) FILTER (WHERE f.layer = 'village')        AS villages,
+               count(*) FILTER (WHERE f.layer = 'road')           AS roads,
+               count(*) FILTER (WHERE f.layer = 'farmland')       AS farmland,
+               count(*) FILTER (WHERE f.layer = 'infrastructure') AS infrastructure
+          FROM flood_analysis a
+          JOIN satellite_images i ON i.image_id = a.image_id
+          LEFT JOIN reference_features f ON ST_Intersects(f.geom, i.footprint)
+         WHERE a.analysis_id = :aid"""), {"aid": analysis_id}).mappings().one()
+    return describe_coverage(dict(row))

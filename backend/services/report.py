@@ -477,7 +477,14 @@ def _section_impact(data, styles):
              f"{plural(r['bridges']['count'], 'bridge')}, {number(r['bridges']['length_km'], 3)} km lie over the water"],
             ["Farmland", f"{plural(f['count'], 'area')}, {number(f['flooded_area_km2'], 3)} km2 flooded"],
             ["Facilities", f"{i['inside']} inside the flooded area, {i['near']} near it"]]
-    out = [KeepTogether([heading, intro, Spacer(1, 4),
+    coverage = data.get("coverage") or {}
+    if coverage.get("level") in ("none", "partial"):
+        coverage_block = [_notice(escape(str(coverage.get("message", ""))), styles), Spacer(1, 4)]
+    elif coverage.get("message"):
+        coverage_block = [Paragraph(escape(str(coverage["message"])), styles["small"]), Spacer(1, 4)]
+    else:
+        coverage_block = []
+    out = [KeepTogether([heading, intro, Spacer(1, 4), *coverage_block,
                          _grid_table(["Layer", "Estimate"], rows, styles, [74 * mm, 100 * mm])])]
 
     # facilities by type

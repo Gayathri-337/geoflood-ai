@@ -12,6 +12,7 @@ import {
 } from "../format.js";
 import AnalysisMap from "../map/AnalysisMap.jsx";
 import ReportButton from "../components/ReportButton.jsx";
+import CoverageNote from "../components/CoverageNote.jsx";
 import SeverityCard from "../components/SeverityCard.jsx";
 import {
   COLORS,
@@ -413,6 +414,8 @@ export default function AnalysisPage() {
                   ? formatDate(summary.last_computed_at)
                   : "not computed yet"}
               </p>
+
+              <CoverageNote analysisId={analysisId} />
 
               {canCompute ? (
                 <form

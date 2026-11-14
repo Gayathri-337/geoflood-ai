@@ -56,6 +56,7 @@ def collect_report_data(db: Session, analysis_id: int, generated_by=None) -> dic
         "source_name": image.get("source_name"), "acquired_at": image.get("acquired_at"),
         "zones": _zones(db, analysis_id),
         "impact": {"summary": summary, "layers": layers},
+        "coverage": impact_service.reference_coverage(db, analysis_id),
         "severity": severity_rules.classify(analysis, summary),
         "actions": actions_service.list_actions(db, analysis["event_id"], {}, 500, 0),
     }

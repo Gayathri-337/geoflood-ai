@@ -134,6 +134,7 @@ export const api = {
   analysis: (id) => request(`/api/analyses/${encodeURIComponent(id)}`),
   zones: (id) => request(`/api/analyses/${encodeURIComponent(id)}/zones`),
   impactSummary: (id) => request(`/api/analyses/${encodeURIComponent(id)}/impact`),
+  referenceCoverage: (id) => request(`/api/analyses/${encodeURIComponent(id)}/reference-coverage`),
   impactLayer: (id, layer) =>
     request(`/api/analyses/${encodeURIComponent(id)}/impact/${encodeURIComponent(layer)}`),
   computeImpact: (id, nearM) =>

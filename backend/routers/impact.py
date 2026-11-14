@@ -65,6 +65,16 @@ def impact_summary(
             "note": SUMMARY_NOTE, **svc.summarize(db, analysis_id, zone)}
 
 
+@router.get("/{analysis_id}/reference-coverage")
+def reference_coverage(analysis_id: int = PathParam(ge=1, le=MAX_BIGINT), db: Session = Depends(get_db)):
+    """
+    How much reference data (OpenStreetMap villages, roads, farmland, facilities) is stored inside this analysis's
+    image. 'none' or 'partial' means that an impact of 0 may only mean there is no data. Nothing is changed.
+    """
+    _baseline_or_404(db, analysis_id)
+    return {"analysis_id": analysis_id, **svc.reference_coverage(db, analysis_id)}
+
+
 @router.get("/{analysis_id}/impact/{layer}")
 def impact_layer(
     analysis_id: int = PathParam(ge=1, le=MAX_BIGINT),
