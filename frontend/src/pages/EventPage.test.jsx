@@ -57,7 +57,11 @@ describe("event page", () => {
     expect(await screen.findByRole("heading", { name: "Assam flood demo" })).toBeInTheDocument();
     expect(screen.getByText(/Brahmaputra valley, India/)).toBeInTheDocument();
     
-    for (const key of Object.keys(ROUTES)) expect(callsTo(fetchFn, key)).toHaveLength(1);
+    for (const key of Object.keys(ROUTES)) {
+      await vi.waitFor(() => {
+        expect(callsTo(fetchFn, key)).toHaveLength(1);
+      });
+    }
 
     expect(screen.getAllByTestId(/^action-/)).toHaveLength(3);
     const map = await ready();

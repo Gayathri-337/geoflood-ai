@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api/client.js";
 import { formatDate, formatInt, formatKm2 } from "../format.js";
+import SeveritySummary from "../components/SeveritySummary.jsx";
 import { LEVEL_BADGE, LEVEL_LABEL } from "../severity.js";
 
 function Stat({ id, label, value, hint }) {
@@ -154,7 +155,18 @@ export default function Dashboard() {
 
       <p className="text-muted small mb-4">
         {stats.note} Latest analysis: {formatDate(stats.latest_analysis_at)}.
+        {stats.repeat_analyses > 0 && (
+          <>
+            {" "}
+            {stats.repeat_analyses} of the completed analyses{" "}
+            {stats.repeat_analyses === 1 ? "repeats an image" : "repeat an image"} that was already analysed with the
+            same baseline setting, so {stats.repeat_analyses === 1 ? "its" : "their"} areas are counted again in these
+            totals.
+          </>
+        )}
       </p>
+
+      <SeveritySummary counts={stats.severity_counts} />
 
       <h2 className="h5">Recent analyses</h2>
 
@@ -185,7 +197,9 @@ export default function Dashboard() {
                     </Link>
                   </td>
                   <td>{a.original_filename}</td>
-                  <td>{a.event_id}</td>
+                  <td>
+                    <Link to={`/events/${a.event_id}`}>{a.event_id}</Link>
+                  </td>
                   <td className="text-end">
                     {formatKm2(a.water_area_km2)}
                   </td>

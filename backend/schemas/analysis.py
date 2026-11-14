@@ -58,4 +58,6 @@ class DashboardOut(BaseModel):
     total_permanent_water_area_km2: float
     total_new_flood_area_km2: float         # only analyses that had a baseline
     latest_analysis_at: Optional[datetime]
+    repeat_analyses: int = 0                # completed analyses that repeat an image + baseline setting
+    severity_counts: dict[str, int] = {}    # saved levels; 'not_classified' = no level saved yet
     note: str
