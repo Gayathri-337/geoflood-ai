@@ -11,6 +11,7 @@ import {
   formatPercent,
 } from "../format.js";
 import AnalysisMap from "../map/AnalysisMap.jsx";
+import ReportButton from "../components/ReportButton.jsx";
 import SeverityCard from "../components/SeverityCard.jsx";
 import {
   COLORS,
@@ -252,6 +253,10 @@ export default function AnalysisPage() {
         {a.model_name} (threshold {a.threshold}) · severity:{" "}
         {savedSeverity || a.severity || "not classified yet"}
       </p>
+
+      <div className="mb-3">
+        <ReportButton analysisId={a.analysis_id} />
+      </div>
 
       {a.warnings.length > 0 && (
         <div className="alert alert-warning py-2" role="alert">

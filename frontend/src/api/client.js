@@ -98,6 +98,32 @@ async function request(path, { method = "GET", body, form, formData, auth = true
   return data;
 }
 
+/** Like request(), but the answer is a file (a Blob). A plain link cannot send the login token, so the page fetches it. */
+async function requestBlob(path) {
+  const headers = {};
+  const token = tokenStore.get();
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  let response;
+  try {
+    response = await fetch(`${BASE_URL}${path}`, { method: "GET", headers });
+  } catch {
+    throw new ApiError("Cannot reach the server. Is the backend running?", 0);
+  }
+
+  if (!response.ok) {
+    let data = null;
+    try {
+      data = JSON.parse(await response.text());
+    } catch {
+      data = null;
+    }
+    if (response.status === 401 && unauthorizedHandler) unauthorizedHandler();
+    throw new ApiError(messageFrom(data, response.status), response.status);
+  }
+  return response.blob();
+}
+
 export const api = {
   // auth: false, so that a wrong password does not count as "your session ended"
   login: (username, password) =>
@@ -144,5 +170,8 @@ export const api = {
   updateAction: (id, changes) =>
     request(`/api/actions/${encodeURIComponent(id)}`, { method: "PATCH", body: changes }),
   deleteAction: (id) => request(`/api/actions/${encodeURIComponent(id)}`, { method: "DELETE" }),
+
+  // Phase 28: the PDF report of an analysis, as a Blob
+  downloadReport: (id) => requestBlob(`/api/analyses/${encodeURIComponent(id)}/report.pdf`),
 
 };
