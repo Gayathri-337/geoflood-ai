@@ -31,6 +31,7 @@ const ROUTES = {
   "GET /api/analyses?event_id=2&limit=50": [200, EVENT_ANALYSES],
   [LIST]: [200, ACTIONS],
   "GET /api/events/2/actions/geojson": [200, PINS],
+  "GET /api/events/2/progression": [200, { event_id: 2, series: [], unassigned: [], criteria: {}, note: "" }],
 };
 
 function renderPage(role = "analyst", path = "/events/2") {

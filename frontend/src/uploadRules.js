@@ -33,3 +33,24 @@ export function chipMismatch(imageName, baselineName) {
   const baseline = chipPrefix(baselineName);
   return image !== null && baseline !== null && image !== baseline;
 }
+
+// ---- Phase 29b: the date the satellite took the image (optional)
+export const EARLIEST_DATE = "2000-01-01";
+
+/** Today as YYYY-MM-DD in the browser's own time zone. */
+export function todayString(now = new Date()) {
+  const two = (n) => String(n).padStart(2, "0");
+  return `${now.getFullYear()}-${two(now.getMonth() + 1)}-${two(now.getDate())}`;
+}
+
+/** "" when the value is fine (or empty), otherwise a message. */
+export function checkAcquiredDate(value, now = new Date()) {
+  if (!value) return "";
+  const parsed = /^\d{4}-\d{2}-\d{2}$/.test(value) ? new Date(`${value}T00:00:00Z`) : null;
+  if (!parsed || Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== value) {
+    return "The date the satellite took the image is not a real date.";
+  }
+  if (value < EARLIEST_DATE) return "The date the satellite took the image cannot be before the year 2000.";
+  if (value > todayString(now)) return "The date the satellite took the image cannot be in the future.";
+  return "";
+}

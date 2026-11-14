@@ -2,7 +2,14 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api/client.js";
 import { useAuth } from "../auth/authContext.js";
-import { MAX_UPLOAD_MB, checkBaselineFile, checkImageFile, chipMismatch } from "../uploadRules.js";
+import {
+  MAX_UPLOAD_MB,
+  checkAcquiredDate,
+  checkBaselineFile,
+  checkImageFile,
+  chipMismatch,
+  todayString,
+} from "../uploadRules.js";
 
 const ANALYST_ROLES = new Set(["analyst", "admin"]);
 const EMPTY_EVENT = { open: false, name: "", region: "", country: "", busy: false, error: "" };
@@ -20,6 +27,7 @@ export default function UploadPage() {
   const [sourceId, setSourceId] = useState("");
   const [image, setImage] = useState(null);
   const [baseline, setBaseline] = useState(null);
+  const [acquiredAt, setAcquiredAt] = useState("");
   const [formError, setFormError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [elapsed, setElapsed] = useState(0);
@@ -57,6 +65,7 @@ export default function UploadPage() {
     const problem =
       checkImageFile(image) ||
       checkBaselineFile(baseline) ||
+      checkAcquiredDate(acquiredAt) ||
       (!eventId ? "Choose an event, or create one first." : "") ||
       (!sourceId ? "Choose the imagery source." : "");
     if (problem) {
@@ -66,7 +75,7 @@ export default function UploadPage() {
     setFormError("");
     setSubmitting(true);
     try {
-      const created = await api.createAnalysis({ file: image, baselineFile: baseline, eventId, sourceId });
+      const created = await api.createAnalysis({ file: image, baselineFile: baseline, eventId, sourceId, acquiredAt });
       navigate(`/analyses/${created.analysis_id}`);
     } catch (err) {
       setFormError(err.message);
@@ -260,6 +269,25 @@ export default function UploadPage() {
               {baseline
                 ? sizeText(baseline)
                 : "A 1-band GeoTIFF on exactly the same grid as the image, 1 = water (for a dataset chip: its JRCWaterHand file). Without it, permanent and new water are not separated."}
+            </div>
+          </div>
+
+          <div className="mb-3">
+            <label htmlFor="acquired-at" className="form-label">
+              Date the satellite took the image (optional)
+            </label>
+            <input
+              id="acquired-at"
+              type="date"
+              className="form-control"
+              min="2000-01-01"
+              max={todayString()}
+              value={acquiredAt}
+              onChange={(e) => setAcquiredAt(e.target.value)}
+            />
+            <div className="form-text">
+              Needed to compare images of the same area over time. This is the date of the satellite pass, not
+              today&apos;s date. Without it the analysis works as before but is left out of the comparison.
             </div>
           </div>
 

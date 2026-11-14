@@ -143,14 +143,16 @@ export const api = {
   events: (limit = 100) => request(`/api/events?limit=${encodeURIComponent(limit)}`),
   sources: () => request("/api/sources"),
   createEvent: (event) => request("/api/events", { method: "POST", body: event }),
-  createAnalysis: ({ file, baselineFile, eventId, sourceId }) => {
+  createAnalysis: ({ file, baselineFile, eventId, sourceId, acquiredAt }) => {
     const formData = new FormData();
     formData.append("file", file);
     formData.append("event_id", String(eventId));
     formData.append("source_id", String(sourceId));
     if (baselineFile) formData.append("baseline_file", baselineFile);
+    if (acquiredAt) formData.append("acquired_at", acquiredAt);
     return request("/api/analyses", { method: "POST", formData });
   },
+  progression: (eventId) => request(`/api/events/${encodeURIComponent(eventId)}/progression`),
   severity: (id) => request(`/api/analyses/${encodeURIComponent(id)}/severity`),
   saveSeverity: (id) => request(`/api/analyses/${encodeURIComponent(id)}/severity`, { method: "POST" }),
   

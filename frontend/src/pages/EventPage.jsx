@@ -5,6 +5,7 @@ import { api } from "../api/client.js";
 import { useAuth } from "../auth/authContext.js";
 import ActionForm from "../components/ActionForm.jsx";
 import ActionsPanel from "../components/ActionsPanel.jsx";
+import ProgressionPanel from "../components/ProgressionPanel.jsx";
 import { formatDate } from "../format.js";
 import EventMap from "../map/EventMap.jsx";
 import { eventBounds } from "../map/eventBounds.js";
@@ -197,6 +198,8 @@ export default function EventPage() {
               )}
             </div>
           </div>
+
+          <ProgressionPanel eventId={eventId} />
         </div>
 
         <div className="col-lg-5">
