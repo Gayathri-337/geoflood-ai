@@ -26,6 +26,7 @@ from backend.routers import (
     health,
     impact,
     predict,
+    progression,
     report,
     severity,
     sources,
@@ -178,7 +179,11 @@ app.include_router(
     prefix="/api",
     dependencies=policy,
 )
-
+app.include_router(
+    progression.router,
+    prefix="/api",
+    dependencies=policy,
+)
 
 # ------------------------------------------------------------
 # Root endpoint

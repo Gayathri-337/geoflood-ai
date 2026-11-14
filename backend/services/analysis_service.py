@@ -106,7 +106,7 @@ def build_zones(mask, probability, transform, crs, permanent=None) -> list[dict]
 
 # ------------------------------------------------------------------ writing
 def store_analysis(db: Session, *, event_id, source_id, file_name, input_path, band_count,
-                   result, areas, baseline_method, zones) -> int:
+                   result, areas, baseline_method, zones, acquired_at=None) -> int:
     """Insert the image, the analysis and its zones. Does NOT commit. Returns analysis_id."""
     stats = result.stats
     west, south, east, north = transform_bounds(
@@ -116,15 +116,16 @@ def store_analysis(db: Session, *, event_id, source_id, file_name, input_path, b
 
     image_id = db.execute(text("""
         INSERT INTO satellite_images (event_id, source_id, image_role, file_name, file_path,
-                                      file_sha256, width_px, height_px, band_count, crs, footprint)
+                                      file_sha256, width_px, height_px, band_count, crs, footprint, acquired_at)
         VALUES (:event_id, :source_id, 'event', :file_name, :file_path, :sha, :w, :h, :bands, :crs,
-                ST_MakeEnvelope(:west, :south, :east, :north, 4326))
+                ST_MakeEnvelope(:west, :south, :east, :north, 4326), :acquired_at)
         RETURNING image_id"""), {
         "event_id": event_id, "source_id": source_id, "file_name": file_name,
         "file_path": stored_path(input_path), "sha": sha256_of(input_path),
         "w": stats["width"], "h": stats["height"], "bands": band_count,
         "crs": f"EPSG:{epsg}" if epsg else "custom",
         "west": west, "south": south, "east": east, "north": north,
+        "acquired_at": acquired_at,
     }).scalar_one()
 
     analysis_id = db.execute(text("""

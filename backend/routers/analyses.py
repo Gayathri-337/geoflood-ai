@@ -17,6 +17,7 @@ from backend.database import get_db
 from backend.schemas.analysis import AnalysisOut
 from backend.services import analysis_service as svc
 from backend.services.inference import ModelService, ModelUnavailable, get_model_service
+from backend.services.progression import validate_acquired_at
 from backend.services.uploads import (UploadRejected, check_suffix, clean_filename,
                                       inspect_geotiff, save_upload)
 from gis.area_calculator import analyze_water
@@ -40,6 +41,8 @@ def create_analysis(
     baseline_file: Optional[UploadFile] = File(
         None, description="Optional 1-band GeoTIFF on the same grid as the image, 1 = water "
                           "(for example the JRCWaterHand file of a dataset chip)"),
+    acquired_at: Optional[str] = Form(
+        None, description="Optional: the date (or date and time) the satellite took the image, for example 2026-10-27. Needed to compare analyses over time."),
     settings: Settings = Depends(get_settings),
     models: ModelService = Depends(get_model_service),
     db: Session = Depends(get_db),
@@ -57,6 +60,11 @@ def create_analysis(
         raise HTTPException(404, f"Event {event_id} not found")
     if not _exists(db, "satellite_sources", "source_id", source_id):
         raise HTTPException(404, f"Satellite source {source_id} not found")
+
+    try:
+        observed_at = validate_acquired_at(acquired_at)
+    except ValueError as err:
+        raise HTTPException(422, str(err))
 
     name = clean_filename(file.filename)
     check_suffix(name)
@@ -92,7 +100,8 @@ def create_analysis(
         analysis_id = svc.store_analysis(
             db, event_id=event_id, source_id=source_id, file_name=name, input_path=input_path,
             band_count=models.in_channels, result=result, areas=areas,
-            baseline_method="none" if permanent is None else "jrc", zones=zones)
+            baseline_method="none" if permanent is None else "jrc", zones=zones,
+            acquired_at=observed_at)
         db.commit()
         return svc.fetch_analysis(db, analysis_id)
     except Exception:
